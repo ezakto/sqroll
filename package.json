@@ -1,0 +1,32 @@
+{
+  "name": "sqroll",
+  "version": "1.0.0",
+  "description": "Another scrolling library",
+  "main": "dist/sqroll.dist.js",
+  "author": "Nicolás Arias <nicolas@nicolasarias.com>",
+  "homepage": "https://github.com/ezakto/sqroll",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ezakto/sqroll.git"
+  },
+  "license": "MIT",
+  "keywords":  [
+    "scroll",
+    "scrolling",
+    "viewport",
+    "trigger",
+    "track",
+    "parallax"
+  ],
+  "scripts": {
+    "build": "babel ./sqroll.js -o ./dist/sqroll.js",
+    "min": "uglifyjs ./dist/sqroll.js -o ./dist/sqroll.min.js --compress --mangle"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.2.3",
+    "@babel/core": "^7.3.3",
+    "@babel/preset-env": "^7.3.1",
+    "babel-plugin-transform-es2015-modules-umd": "^6.24.1",
+    "uglify-js": "^3.4.9"
+  }
+}
