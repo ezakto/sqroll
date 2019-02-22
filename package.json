@@ -1,8 +1,8 @@
 {
   "name": "sqroll",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Another scrolling library",
-  "main": "dist/sqroll.dist.js",
+  "main": "dist/sqroll.min.js",
   "author": "Nicolás Arias <nicolas@nicolasarias.com>",
   "homepage": "https://github.com/ezakto/sqroll",
   "repository": {
