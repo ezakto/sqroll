@@ -1,6 +1,6 @@
 {
   "name": "sqroll",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Another scrolling library",
   "main": "dist/sqroll.min.js",
   "author": "Nicolás Arias <nicolas@nicolasarias.com>",

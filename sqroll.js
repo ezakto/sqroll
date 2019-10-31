@@ -36,20 +36,12 @@ module.exports = function sqroll() {
 
   let callbacks = [];
   let lastScroll = -Infinity;
-  let running = false;
 
   function run() {
     const scroll = window.scrollY;
     const direction = scroll >= lastScroll ? 'down' : 'up';
 
-    if (!running) {
-      running = true;
-      requestAnimationFrame(() => {
-        callbacks = callbacks.filter(cb => cb(scroll, direction));
-        running = false;
-      });
-    }
-
+    callbacks = callbacks.filter(cb => cb(scroll, direction));
     lastScroll = scroll;
   }
 
@@ -58,7 +50,6 @@ module.exports = function sqroll() {
       const { from, to, callback } = options;
       const startAt = calculateRelativeString(elem, options.startAt);
       const endAt = calculateRelativeString(elem, options.endAt);
-
       const diff = endAt - startAt;
 
       callbacks.push((scroll, direction) => {
@@ -69,7 +60,7 @@ module.exports = function sqroll() {
         const percent = currentScroll * 100 / diff;
         const value = to > from ? percent * to / 100 + from : (100 - percent) * from / 100 + to;
 
-        callback(elem, value, scroll, direction);
+        requestAnimationFrame(() => callback(elem, value, scroll, direction));
 
         return true;
       });
@@ -84,7 +75,7 @@ module.exports = function sqroll() {
 
         if (currentScroll < 0) return true;
 
-        callback(elem, scroll, direction);
+        requestAnimationFrame(() => callback(elem, scroll, direction));
 
         return false;
       });
@@ -103,11 +94,11 @@ module.exports = function sqroll() {
         if ((top + offsetTop) > window.innerHeight || (bottom - offsetBottom) < 0) {
           if (visible) {
             visible = false;
-            onOut(elem, scroll, direction);
+            requestAnimationFrame(() => onOut(elem, scroll, direction));
           }
         } else if (!visible) {
           visible = true;
-          onIn(elem, scroll, direction);
+          requestAnimationFrame(() => onIn(elem, scroll, direction));
         }
 
         return true;
@@ -131,5 +122,5 @@ module.exports = function sqroll() {
       callbacks = [];
       document.removeEventListener('scroll', run);
     },
-  }
-}
+  };
+};
