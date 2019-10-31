@@ -2,7 +2,7 @@ module.exports = function sqroll() {
   const anchorRegExp = /^(?:(top|middle|bottom)|(top|middle|bottom)?([+-]\d+(?:px|vh))?)$/;
   const sizeRegExp = /([+-]?\d+)(px|vh)/;
 
-  function parseSize(size) {
+  function parseUnit(size) {
     if (typeof size !== 'string') return size;
 
     const match = size.match(sizeRegExp);
@@ -14,24 +14,43 @@ module.exports = function sqroll() {
     return Number(size) || 0;
   }
 
-  function calculateRelativeString(elem, string = 'top') {
-    if (typeof string !== 'string') return string;
+  function getTargetScroll(elem, elemAnchor, viewportAnchor) {
+    let elemY = Number(elemAnchor) || 0;
+    let target = Number(viewportAnchor) || 0;
 
-    const match = string.match(anchorRegExp);
+    if (typeof elemAnchor === 'string') {
+      const match = elemAnchor.match(anchorRegExp);
 
-    if (match) {
-      const initialPosition = elem.getBoundingClientRect();
-      const anchor = match[1] || match[2] || 'top';
-      const offset = parseSize(match[3] || 0);
-      let top = initialPosition.top + window.scrollY;
+      if (match) {
+        const initialPosition = elem.getBoundingClientRect();
+        const anchor = match[1] || match[2] || 'top';
+        const offset = parseUnit(match[3] || 0);
+        let top = initialPosition.top + window.scrollY;
 
-      if (anchor === 'bottom') top += (initialPosition.bottom - initialPosition.top);
-      else if (anchor === 'middle') top += (initialPosition.bottom - initialPosition.top) / 2;
+        if (anchor === 'bottom') top += (initialPosition.bottom - initialPosition.top);
+        else if (anchor === 'middle') top += (initialPosition.bottom - initialPosition.top) / 2;
 
-      return top + offset;
+        elemY = top + offset;
+      }
     }
 
-    return Number(string) || 0;
+    if (typeof viewportAnchor === 'string') {
+      const match = viewportAnchor.match(anchorRegExp);
+
+      if (match) {
+        const anchor = match[1] || match[2] || 'top';
+        const offset = parseUnit(match[3] || 0);
+
+        target = elemY;
+
+        if (anchor === 'bottom') target -= window.innerHeight;
+        else if (anchor === 'middle') target -= window.innerHeight / 2;
+
+        target += offset;
+      }
+    }
+
+    return target;
   }
 
   let callbacks = [];
@@ -47,18 +66,26 @@ module.exports = function sqroll() {
 
   return {
     track(elem, options) {
-      const { from, to, callback } = options;
-      const startAt = calculateRelativeString(elem, options.startAt);
-      const endAt = calculateRelativeString(elem, options.endAt);
+      const { start, end, callback } = options;
+      const startAt = getTargetScroll(elem, start.when, start.hits);
+      const endAt = getTargetScroll(elem, end.when, end.hits);
       const diff = endAt - startAt;
+      let changing = false;
 
       callbacks.push((scroll, direction) => {
         const currentScroll = scroll - startAt;
 
-        if (currentScroll < 0 || currentScroll > diff) return true;
+        if (currentScroll < 0 || currentScroll > diff) {
+          if (changing) {
+            requestAnimationFrame(() => callback(elem, currentScroll < 0 ? start.value : end.value, scroll, direction));
+          }
+
+          return true;
+        }
 
         const percent = currentScroll * 100 / diff;
-        const value = to > from ? percent * to / 100 + from : (100 - percent) * from / 100 + to;
+        const value = end.value > start.value ? percent * end.value / 100 + start.value : (100 - percent) * start.value / 100 + end.value;
+        changing = true;
 
         requestAnimationFrame(() => callback(elem, value, scroll, direction));
 
@@ -67,8 +94,8 @@ module.exports = function sqroll() {
     },
 
     trigger(elem, options) {
-      const { callback } = options;
-      const at = calculateRelativeString(elem, options.at);
+      const { callback, when, hits } = options;
+      const at = getTargetScroll(elem, when, hits);
 
       callbacks.push((scroll, direction) => {
         const currentScroll = scroll - at;
@@ -84,8 +111,8 @@ module.exports = function sqroll() {
     viewport(elem, options) {
       const { onOut, onIn, offset } = options;
       const [offsetTopString, offsetBottomString] = (offset || '').split(/\s+/);
-      const offsetTop = parseSize(offsetTopString);
-      const offsetBottom = parseSize(offsetBottomString);
+      const offsetTop = parseUnit(offsetTopString);
+      const offsetBottom = offsetBottomString ? parseUnit(offsetBottomString) : offsetTop;
       let visible = false;
 
       callbacks.push((scroll, direction) => {
