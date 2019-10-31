@@ -1,58 +1,58 @@
-module.exports = function sqroll() {
-  const anchorRegExp = /^(?:(top|middle|bottom)|(top|middle|bottom)?([+-]\d+(?:px|vh))?)$/;
-  const sizeRegExp = /([+-]?\d+)(px|vh)/;
+const anchorRegExp = /^(?:(top|middle|bottom)|(top|middle|bottom)?([+-]\d+(?:px|vh))?)$/;
+const sizeRegExp = /([+-]?\d+)(px|vh)/;
 
-  function parseUnit(size) {
-    if (typeof size !== 'string') return size;
+function parseUnit(size) {
+  if (typeof size !== 'string') return size;
 
-    const match = size.match(sizeRegExp);
+  const match = size.match(sizeRegExp);
+
+  if (match) {
+    return Number(match[1]) * (match[2] === 'vh' ? Math.round(window.innerHeight / 100) : 1);
+  }
+
+  return Number(size) || 0;
+}
+
+function getTargetScroll(elem, elemAnchor, viewportAnchor) {
+  let elemY = Number(elemAnchor) || 0;
+  let target = Number(viewportAnchor) || 0;
+
+  if (typeof elemAnchor === 'string') {
+    const match = elemAnchor.match(anchorRegExp);
 
     if (match) {
-      return Number(match[1]) * (match[2] === 'vh' ? Math.round(window.innerHeight / 100) : 1);
-    }
+      const initialPosition = elem.getBoundingClientRect();
+      const anchor = match[1] || match[2] || 'top';
+      const offset = parseUnit(match[3] || 0);
+      let top = initialPosition.top + window.scrollY;
 
-    return Number(size) || 0;
+      if (anchor === 'bottom') top += (initialPosition.bottom - initialPosition.top);
+      else if (anchor === 'middle') top += (initialPosition.bottom - initialPosition.top) / 2;
+
+      elemY = top + offset;
+    }
   }
 
-  function getTargetScroll(elem, elemAnchor, viewportAnchor) {
-    let elemY = Number(elemAnchor) || 0;
-    let target = Number(viewportAnchor) || 0;
+  if (typeof viewportAnchor === 'string') {
+    const match = viewportAnchor.match(anchorRegExp);
 
-    if (typeof elemAnchor === 'string') {
-      const match = elemAnchor.match(anchorRegExp);
+    if (match) {
+      const anchor = match[1] || match[2] || 'top';
+      const offset = parseUnit(match[3] || 0);
 
-      if (match) {
-        const initialPosition = elem.getBoundingClientRect();
-        const anchor = match[1] || match[2] || 'top';
-        const offset = parseUnit(match[3] || 0);
-        let top = initialPosition.top + window.scrollY;
+      target = elemY;
 
-        if (anchor === 'bottom') top += (initialPosition.bottom - initialPosition.top);
-        else if (anchor === 'middle') top += (initialPosition.bottom - initialPosition.top) / 2;
+      if (anchor === 'bottom') target -= window.innerHeight;
+      else if (anchor === 'middle') target -= window.innerHeight / 2;
 
-        elemY = top + offset;
-      }
+      target += offset;
     }
-
-    if (typeof viewportAnchor === 'string') {
-      const match = viewportAnchor.match(anchorRegExp);
-
-      if (match) {
-        const anchor = match[1] || match[2] || 'top';
-        const offset = parseUnit(match[3] || 0);
-
-        target = elemY;
-
-        if (anchor === 'bottom') target -= window.innerHeight;
-        else if (anchor === 'middle') target -= window.innerHeight / 2;
-
-        target += offset;
-      }
-    }
-
-    return target;
   }
 
+  return target;
+}
+
+module.exports = function sqroll() {
   let callbacks = [];
   let lastScroll = -Infinity;
 
@@ -77,14 +77,22 @@ module.exports = function sqroll() {
 
         if (currentScroll < 0 || currentScroll > diff) {
           if (changing) {
-            requestAnimationFrame(() => callback(elem, currentScroll < 0 ? start.value : end.value, scroll, direction));
+            requestAnimationFrame(() => callback(
+              elem,
+              currentScroll < 0 ? start.value : end.value,
+              scroll,
+              direction,
+            ));
           }
 
           return true;
         }
 
         const percent = currentScroll * 100 / diff;
-        const value = end.value > start.value ? percent * end.value / 100 + start.value : (100 - percent) * start.value / 100 + end.value;
+        const value = end.value > start.value
+          ? percent * end.value / 100 + start.value
+          : (100 - percent) * start.value / 100 + end.value;
+
         changing = true;
 
         requestAnimationFrame(() => callback(elem, value, scroll, direction));
