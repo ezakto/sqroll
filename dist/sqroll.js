@@ -151,22 +151,23 @@
         var callback = options.callback,
             when = options.when,
             hits = options.hits,
-            at = options.at;
+            at = options.at,
+            direction = options.direction;
         var target = typeof at === 'number' ? at : getTargetScroll(elem, when, hits);
         var initialScroll = window.scrollY;
-        callbacks.push(function (scroll, direction) {
+        callbacks.push(function (scroll, scrollDirection) {
           var diff = scroll - target;
 
-          if (initialScroll < target) {
+          if (direction ? direction === 'down' : initialScroll < target) {
             if (diff < 0) return true;
           }
 
-          if (initialScroll > target) {
+          if (direction ? direction === 'up' : initialScroll > target) {
             if (diff > 0) return true;
           }
 
           requestAnimationFrame(function () {
-            return callback(elem, scroll, direction);
+            return callback(elem, scroll, scrollDirection);
           });
           return false;
         });

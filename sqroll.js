@@ -106,22 +106,22 @@ module.exports = function sqroll() {
     },
 
     trigger(elem, options) {
-      const { callback, when, hits, at } = options;
+      const { callback, when, hits, at, direction } = options;
       const target = typeof at === 'number' ? at : getTargetScroll(elem, when, hits);
       const initialScroll = window.scrollY;
 
-      callbacks.push((scroll, direction) => {
+      callbacks.push((scroll, scrollDirection) => {
         const diff = scroll - target;
 
-        if (initialScroll < target) {
+        if (direction ? direction === 'down' : initialScroll < target) {
           if (diff < 0) return true;
         }
 
-        if (initialScroll > target) {
+        if (direction ? direction === 'up' : initialScroll > target) {
           if (diff > 0) return true;
         }
 
-        requestAnimationFrame(() => callback(elem, scroll, direction));
+        requestAnimationFrame(() => callback(elem, scroll, scrollDirection));
 
         return false;
       });

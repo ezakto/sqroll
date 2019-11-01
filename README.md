@@ -52,6 +52,18 @@ Also, instead of `when` and `hits`, you can specify an absolute amount of scroll
 
 Callback is called with the element reference, the current amount of scroll and the direction the user scrolled (`'up'` or `'down'`).
 
+By default, the callback will when the mark is passed from any direction. If you want the trigger to be called only when scrolling in one direction, pass `direction` (`'up'` or `'down'`):
+
+    sq.trigger(el, {
+      at: 1000, // px
+      direction: 'down',
+      callback: (el, currentScroll, direction) => {
+        console.log('Click!');
+      },
+    });
+
+In this case, if sqroll is started with a document scroll higher than `at`, the callback will be fired immediately (for example, in a page refresh).
+
 ### sq.viewport(el, options)
 
 This method will fire one callback every time the element enters the viewport, and one callback everytime it leaves the viewport.
