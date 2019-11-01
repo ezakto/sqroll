@@ -7,9 +7,9 @@ Download source or `npm install sqroll`.
 
 Include script `dist/sqroll.min.js` as a script tag or include in source:
 
-    const sqroll = require('scroll');
+    const sqroll = require('sqroll');
 
-    import sqroll from 'scroll';
+    import sqroll from 'sqroll';
 
 You might need to polyfill `requestAnimationFrame()`.
 
