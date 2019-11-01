@@ -22,6 +22,10 @@
   }
 
   function _iterableToArrayLimit(arr, i) {
+    if (!(Symbol.iterator in Object(arr) || Object.prototype.toString.call(arr) === "[object Arguments]")) {
+      return;
+    }
+
     var _arr = [];
     var _n = true;
     var _d = false;
@@ -51,83 +55,118 @@
     if (Array.isArray(arr)) return arr;
   }
 
-  module.exports = function sqroll() {
-    var anchorRegExp = /^(?:(top|middle|bottom)|(top|middle|bottom)?([+-]\d+(?:px|vh))?)$/;
-    var sizeRegExp = /([+-]?\d+)(px|vh)/;
+  var anchorRegExp = /^(?:(top|middle|bottom)|(top|middle|bottom)?([+-]\d+(?:px|vh))?)$/;
+  var sizeRegExp = /([+-]?\d+)(px|vh)/;
 
-    function parseSize(size) {
-      if (typeof size !== 'string') return size;
-      var match = size.match(sizeRegExp);
+  function parseUnit(size) {
+    if (typeof size !== 'string') return size;
+    var match = size.match(sizeRegExp);
 
-      if (match) {
-        return Number(match[1]) * (match[2] === 'vh' ? Math.round(window.innerHeight / 100) : 1);
-      }
-
-      return Number(size) || 0;
+    if (match) {
+      return Number(match[1]) * (match[2] === 'vh' ? Math.round(window.innerHeight / 100) : 1);
     }
 
-    function calculateRelativeString(elem) {
-      var string = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'top';
-      if (typeof string !== 'string') return string;
-      var match = string.match(anchorRegExp);
+    return Number(size) || 0;
+  }
+
+  function getTargetScroll(elem, elemAnchor, viewportAnchor) {
+    var elemY = Number(elemAnchor) || 0;
+    var target = Number(viewportAnchor) || 0;
+
+    if (typeof elemAnchor === 'string') {
+      var match = elemAnchor.match(anchorRegExp);
 
       if (match) {
         var initialPosition = elem.getBoundingClientRect();
         var anchor = match[1] || match[2] || 'top';
-        var offset = parseSize(match[3] || 0);
+        var offset = parseUnit(match[3] || 0);
         var top = initialPosition.top + window.scrollY;
         if (anchor === 'bottom') top += initialPosition.bottom - initialPosition.top;else if (anchor === 'middle') top += (initialPosition.bottom - initialPosition.top) / 2;
-        return top + offset;
+        elemY = top + offset;
       }
-
-      return Number(string) || 0;
     }
 
+    if (typeof viewportAnchor === 'string') {
+      var _match = viewportAnchor.match(anchorRegExp);
+
+      if (_match) {
+        var _anchor = _match[1] || _match[2] || 'top';
+
+        var _offset = parseUnit(_match[3] || 0);
+
+        target = elemY;
+        if (_anchor === 'bottom') target -= window.innerHeight;else if (_anchor === 'middle') target -= window.innerHeight / 2;
+        target += _offset;
+      }
+    }
+
+    return target;
+  }
+
+  module.exports = function sqroll() {
     var callbacks = [];
     var lastScroll = -Infinity;
-    var running = false;
 
     function run() {
       var scroll = window.scrollY;
       var direction = scroll >= lastScroll ? 'down' : 'up';
-
-      if (!running) {
-        running = true;
-        requestAnimationFrame(function () {
-          callbacks = callbacks.filter(function (cb) {
-            return cb(scroll, direction);
-          });
-          running = false;
-        });
-      }
-
+      callbacks = callbacks.filter(function (cb) {
+        return cb(scroll, direction);
+      });
       lastScroll = scroll;
     }
 
     return {
       track: function track(elem, options) {
-        var from = options.from,
-            to = options.to,
+        var start = options.start,
+            end = options.end,
             callback = options.callback;
-        var startAt = calculateRelativeString(elem, options.startAt);
-        var endAt = calculateRelativeString(elem, options.endAt);
+        var startAt = getTargetScroll(elem, start.when, start.hits);
+        var endAt = getTargetScroll(elem, end.when, end.hits);
         var diff = endAt - startAt;
+        var changing = false;
         callbacks.push(function (scroll, direction) {
           var currentScroll = scroll - startAt;
-          if (currentScroll < 0 || currentScroll > diff) return true;
+
+          if (currentScroll < 0 || currentScroll > diff) {
+            if (changing) {
+              requestAnimationFrame(function () {
+                return callback(elem, currentScroll < 0 ? start.value : end.value, scroll, direction);
+              });
+            }
+
+            return true;
+          }
+
           var percent = currentScroll * 100 / diff;
-          var value = to > from ? percent * to / 100 + from : (100 - percent) * from / 100 + to;
-          callback(elem, value, scroll, direction);
+          var value = end.value > start.value ? percent * end.value / 100 + start.value : (100 - percent) * start.value / 100 + end.value;
+          changing = true;
+          requestAnimationFrame(function () {
+            return callback(elem, value, scroll, direction);
+          });
           return true;
         });
       },
       trigger: function trigger(elem, options) {
-        var callback = options.callback;
-        var at = calculateRelativeString(elem, options.at);
+        var callback = options.callback,
+            when = options.when,
+            hits = options.hits;
+        var target = getTargetScroll(elem, when, hits);
+        var initialScroll = window.scrollY;
         callbacks.push(function (scroll, direction) {
-          var currentScroll = scroll - at;
-          if (currentScroll < 0) return true;
-          callback(elem, scroll, direction);
+          var diff = scroll - target;
+
+          if (initialScroll < target) {
+            if (diff < 0) return true;
+          }
+
+          if (initialScroll > target) {
+            if (diff > 0) return true;
+          }
+
+          requestAnimationFrame(function () {
+            return callback(elem, scroll, direction);
+          });
           return false;
         });
       },
@@ -141,8 +180,8 @@
             offsetTopString = _split2[0],
             offsetBottomString = _split2[1];
 
-        var offsetTop = parseSize(offsetTopString);
-        var offsetBottom = parseSize(offsetBottomString);
+        var offsetTop = parseUnit(offsetTopString);
+        var offsetBottom = offsetBottomString ? parseUnit(offsetBottomString) : offsetTop;
         var visible = false;
         callbacks.push(function (scroll, direction) {
           var _elem$getBoundingClie = elem.getBoundingClientRect(),
@@ -152,11 +191,15 @@
           if (top + offsetTop > window.innerHeight || bottom - offsetBottom < 0) {
             if (visible) {
               visible = false;
-              onOut(elem, scroll, direction);
+              requestAnimationFrame(function () {
+                return onOut(elem, scroll, direction);
+              });
             }
           } else if (!visible) {
             visible = true;
-            onIn(elem, scroll, direction);
+            requestAnimationFrame(function () {
+              return onIn(elem, scroll, direction);
+            });
           }
 
           return true;
