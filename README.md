@@ -41,6 +41,15 @@ This is the most basic method. It'll fire a callback function when an element hi
 * You can add an offset in px or vh like: 'top+100px', 'middle-50vh', 'bottom-100'.
 * If only an offset is defined, default reference point is `top`: '+50px', '-10vh'.
 
+Also, instead of `when` and `hits`, you can specify an absolute amount of scroll using `at`:
+
+    sq.trigger(el, {
+      at: 1000, // px
+      callback: (el, currentScroll, direction) => {
+        console.log('Click!');
+      },
+    });
+
 Callback is called with the element reference, the current amount of scroll and the direction the user scrolled (`'up'` or `'down'`).
 
 ### sq.viewport(el, options)
@@ -81,6 +90,23 @@ This will change a value from a starting point to an ending point while the user
 * `start` when should the callback start firing, and the initial value. In this example, when the top edge of the element is at the bottom of the viewport, the element opacity will be 0.
 * `end` when should the callbacks stop, and the final value. In this example, when the top edge of the element is at the top of the viewport, the element opacity will be 1.
 * `callback` gets called only if `value` is updated.
+
+You can also use `at` property instead of `when` and `hits` to specify an absolute amount of scroll in one or both `start` and `end` objects:
+
+    sq.track(el, {
+      start: {
+        at: 0, // px
+        value: 0,
+      },
+      end: {
+        when: 'top',
+        hits: 'top',
+        value: 1,
+      },
+      callback: (elem, value, scroll, direction) => {
+        elem.style.opacity = value;
+      },
+    });
 
 ### sq.start()
 

@@ -121,8 +121,8 @@
         var start = options.start,
             end = options.end,
             callback = options.callback;
-        var startAt = getTargetScroll(elem, start.when, start.hits);
-        var endAt = getTargetScroll(elem, end.when, end.hits);
+        var startAt = typeof start.at === 'number' ? start.at : getTargetScroll(elem, start.when, start.hits);
+        var endAt = typeof end.at === 'number' ? end.at : getTargetScroll(elem, end.when, end.hits);
         var diff = endAt - startAt;
         var changing = false;
         callbacks.push(function (scroll, direction) {
@@ -150,8 +150,9 @@
       trigger: function trigger(elem, options) {
         var callback = options.callback,
             when = options.when,
-            hits = options.hits;
-        var target = getTargetScroll(elem, when, hits);
+            hits = options.hits,
+            at = options.at;
+        var target = typeof at === 'number' ? at : getTargetScroll(elem, when, hits);
         var initialScroll = window.scrollY;
         callbacks.push(function (scroll, direction) {
           var diff = scroll - target;

@@ -67,8 +67,12 @@ module.exports = function sqroll() {
   return {
     track(elem, options) {
       const { start, end, callback } = options;
-      const startAt = getTargetScroll(elem, start.when, start.hits);
-      const endAt = getTargetScroll(elem, end.when, end.hits);
+      const startAt = typeof start.at === 'number'
+        ? start.at
+        : getTargetScroll(elem, start.when, start.hits);
+      const endAt = typeof end.at === 'number'
+        ? end.at
+        : getTargetScroll(elem, end.when, end.hits);
       const diff = endAt - startAt;
       let changing = false;
 
@@ -102,8 +106,8 @@ module.exports = function sqroll() {
     },
 
     trigger(elem, options) {
-      const { callback, when, hits } = options;
-      const target = getTargetScroll(elem, when, hits);
+      const { callback, when, hits, at } = options;
+      const target = typeof at === 'number' ? at : getTargetScroll(elem, when, hits);
       const initialScroll = window.scrollY;
 
       callbacks.push((scroll, direction) => {
