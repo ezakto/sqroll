@@ -107,7 +107,7 @@ module.exports = function sqroll() {
 
     trigger(elem, options) {
       const { callback, when, hits, at, direction } = options;
-      const target = typeof at === 'number' ? at : getTargetScroll(elem, when, hits);
+      const target = at ? parseUnit(at) : getTargetScroll(elem, when, hits);
       const initialScroll = window.scrollY;
 
       callbacks.push((scroll, scrollDirection) => {
