@@ -140,11 +140,17 @@ module.exports = function sqroll() {
         if ((top + offsetTop) > window.innerHeight || (bottom - offsetBottom) < 0) {
           if (visible) {
             visible = false;
-            requestAnimationFrame(() => onOut(elem, scroll, direction));
+
+            if (onOut) {
+              requestAnimationFrame(() => onOut(elem, scroll, direction));
+            }
           }
         } else if (!visible) {
           visible = true;
-          requestAnimationFrame(() => onIn(elem, scroll, direction));
+
+          if (onIn) {
+            requestAnimationFrame(() => onIn(elem, scroll, direction));
+          }
         }
 
         return true;
